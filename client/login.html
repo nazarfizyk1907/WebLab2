@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вхід - URL Shortener</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body class="bg-light">
+    <div id="app" class="d-flex flex-column min-vh-100">
+        
+        <header>
+            <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+                <div class="container">
+                    <a class="navbar-brand fw-bold" href="index.html">
+                        <i class="bi bi-link-45deg"></i> URL Shortener
+                    </a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarNav">
+                        <ul class="navbar-nav ms-auto">
+                            <li class="nav-item"><a class="nav-link" href="index.html">Головна</a></li>
+                            <li class="nav-item"><a class="nav-link" href="about.html">Про додаток</a></li>
+                            <li class="nav-item"><a class="nav-link" href="profile.html">Профіль</a></li>
+                            <li class="nav-item"><a class="nav-link active" href="login.html">Вхід</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+        <main class="container flex-grow-1 d-flex align-items-center justify-content-center py-5">
+            <div class="card shadow border-0" style="max-width: 450px; width: 100%;">
+                <div class="card-body p-4 p-md-5">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-person-circle text-primary" style="font-size: 3rem;"></i>
+                        <h3 class="mt-2">Вхід у систему</h3>
+                    </div>
+
+                    <div v-if="message" :class="['alert', isError ? 'alert-danger' : 'alert-success']" role="alert">
+                        {{ message }}
+                    </div>
+
+                    <form @submit.prevent="loginUser">
+                        <div class="mb-3">
+                            <label class="form-label">Електронна пошта</label>
+                            <input type="email" class="form-control" v-model="formData.email" placeholder="email@example.com" required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label">Пароль</label>
+                            <input type="password" class="form-control" v-model="formData.password" placeholder="••••••••" required>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="rememberMe" v-model="formData.rememberMe">
+                            <label class="form-check-label" for="rememberMe">Запам'ятати мене</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 py-2" :disabled="isLoading">
+                            <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            Увійти
+                        </button>
+                    </form>
+                    <div class="text-center mt-4">
+                        <p class="text-muted small">Ще не зареєстровані? <a href="register.html" class="text-decoration-none">Створити акаунт</a></p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="bg-dark text-white text-center py-3 mt-auto">
+            <div class="container">
+                <p class="mb-0">&copy; 2026 URL Shortener App. Всі права захищені.</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    formData: {
+                        email: '',
+                        password: '',
+                        rememberMe: false
+                    },
+                    message: '',
+                    isError: false,
+                    isLoading: false
+                }
+            },
+            methods: {
+                async loginUser() {
+                    this.isLoading = true;
+                    this.message = '';
+                    
+                    try {
+                        const response = await axios.post('http://localhost:3000/api/login', this.formData);
+                        
+                        this.isError = false;
+                        this.message = 'Вхід успішний! Перенаправлення...';
+                        
+                        localStorage.setItem('user', JSON.stringify(response.data.user));
+                        if(response.data.token) {
+                            localStorage.setItem('token', response.data.token);
+                        }
+
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 1000);
+
+                    } catch (error) {
+                        this.isError = true;
+                        this.message = error.response?.data?.error || 'Невірний email або пароль.';
+                    } finally {
+                        this.isLoading = false;
+                    }
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

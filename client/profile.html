@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профіль користувача - URL Shortener</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <style>
+        [v-cloak] { display: none; }
+        .profile-icon {
+            width: 80px;
+            height: 80px;
+            font-size: 2.5rem;
+        }
+        .stat-card {
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div id="app" class="d-flex flex-column min-vh-100" v-cloak>
+        
+        <header>
+            <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+                <div class="container">
+                    <a class="navbar-brand fw-bold" href="index.html">
+                        <i class="bi bi-link-45deg"></i> URL Shortener
+                    </a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarNav">
+                        <ul class="navbar-nav ms-auto">
+                            <li class="nav-item"><a class="nav-link" href="index.html">Головна</a></li>
+                            <li class="nav-item"><a class="nav-link" href="about.html">Про додаток</a></li>
+                            <li class="nav-item"><a class="nav-link active" href="profile.html">Профіль</a></li>
+                            <li class="nav-item">
+                                <a class="nav-link text-warning" href="#" @click.prevent="logout">
+                                    <i class="bi bi-box-arrow-right"></i> Вихід
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+        <main class="container flex-grow-1 py-5">
+            <div class="row justify-content-center">
+                <div class="col-lg-9 col-xl-8">
+                    
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm profile-icon">
+                                <i class="bi bi-person-bounding-box"></i>
+                            </div>
+                            <div class="ms-4">
+                                <h2 class="mb-0 fw-bold">{{ user.name }}</h2>
+                                <p class="text-muted mb-0">Особистий кабінет користувача</p>
+                            </div>
+                        </div>
+                        <button v-if="!isEditing" @click="startEditing" class="btn btn-outline-primary shadow-sm">
+                            <i class="bi bi-pencil-square me-2"></i>Редагувати профіль
+                        </button>
+                    </div>
+
+                    <div class="row mb-5" v-if="!isEditing">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <div class="card border-0 shadow-sm stat-card bg-white h-100">
+                                <div class="card-body p-4 text-center">
+                                    <div class="display-5 fw-bold text-primary mb-1">{{ stats.totalLinks }}</div>
+                                    <div class="text-muted text-uppercase small fw-bold">Скорочених посилань</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm stat-card bg-white h-100">
+                                <div class="card-body p-4 text-center">
+                                    <div class="display-5 fw-bold text-success mb-1">{{ stats.totalClicks }}</div>
+                                    <div class="text-muted text-uppercase small fw-bold">Загальна кількість переходів</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="statusMessage" :class="['alert alert-dismissible fade show mb-4 shadow-sm', isError ? 'alert-danger' : 'alert-success']" role="alert">
+                        <i :class="['bi me-2', isError ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill']"></i>
+                        {{ statusMessage }}
+                        <button type="button" class="btn-close" @click="statusMessage = ''"></button>
+                    </div>
+
+                    <div class="card shadow-sm border-0 overflow-hidden" v-if="!isEditing">
+                        <div class="card-header bg-white py-3 border-bottom">
+                            <h5 class="card-title mb-0 fw-bold">Контактна інформація</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <tbody class="border-top-0">
+                                        <tr>
+                                            <th class="bg-light ps-4" style="width: 35%;">Повне ім'я</th>
+                                            <td class="ps-4">{{ user.name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th class="bg-light ps-4">Електронна пошта</th>
+                                            <td class="ps-4">{{ user.email }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th class="bg-light ps-4">Стать</th>
+                                            <td class="ps-4">{{ user.gender }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th class="bg-light ps-4">Дата народження</th>
+                                            <td class="ps-4">{{ formatDate(user.birthdate) }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow border-0" v-else>
+                        <div class="card-header bg-white py-3 border-bottom">
+                            <h5 class="card-title mb-0 fw-bold text-primary">Редагування даних</h5>
+                        </div>
+                        <div class="card-body p-4 p-md-5">
+                            <form @submit.prevent="updateProfile">
+                                <div class="row g-4">
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold">Ваше ім'я</label>
+                                        <input type="text" class="form-control form-control-lg" v-model="tempUser.name" required>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold">Email (тільки для читання)</label>
+                                        <input type="email" class="form-control form-control-lg bg-light" :value="user.email" readonly>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold d-block mb-3">Стать</label>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" value="Чоловіча" v-model="tempUser.gender" id="genderM">
+                                            <label class="form-check-label" for="genderM">Чоловіча</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" value="Жіноча" v-model="tempUser.gender" id="genderF">
+                                            <label class="form-check-label" for="genderF">Жіноча</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Дата народження</label>
+                                        <input type="date" class="form-control form-control-lg" v-model="tempUser.birthdate">
+                                    </div>
+                                    <div class="col-12 mt-5">
+                                        <div class="d-flex gap-3">
+                                            <button type="submit" class="btn btn-primary btn-lg flex-grow-1" :disabled="isSaving">
+                                                <span v-if="isSaving" class="spinner-border spinner-border-sm me-2"></span>
+                                                Зберегти зміни
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-lg px-4" @click="isEditing = false">Скасувати</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+        <footer class="bg-dark text-white text-center py-4 mt-auto">
+            <div class="container">
+                <p class="mb-0 opacity-75">&copy; 2026 QuickLink. Розроблено для лабораторної роботи №3.</p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    user: {},      // Дані, що відображаються
+                    tempUser: {},  // Дані для форми редагування
+                    stats: {
+                        totalLinks: 0,
+                        totalClicks: 0
+                    },
+                    isEditing: false,
+                    isSaving: false,
+                    statusMessage: '',
+                    isError: false
+                }
+            },
+            mounted() {
+                // Перевірка авторизації
+                const savedUser = localStorage.getItem('user');
+                if (savedUser) {
+                    this.user = JSON.parse(savedUser);
+                    this.fetchStats();
+                } else {
+                    // Якщо користувач не увійшов — перенаправляємо на логін
+                    window.location.href = 'login.html';
+                }
+            },
+            methods: {
+                // Завантаження статистики з сервера
+                async fetchStats() {
+                    try {
+                        const res = await axios.get(`http://localhost:3000/api/users/${this.user.id}/stats`);
+                        this.stats = res.data;
+                    } catch (err) {
+                        console.error("Не вдалося завантажити статистику", err);
+                    }
+                },
+                // Підготовка до редагування
+                startEditing() {
+                    this.tempUser = { ...this.user };
+                    this.isEditing = true;
+                    this.statusMessage = '';
+                },
+                // Відправка оновлених даних на сервер
+                async updateProfile() {
+                    this.isSaving = true;
+                    this.statusMessage = '';
+                    try {
+                        await axios.put(`http://localhost:3000/api/users/${this.user.id}`, {
+                            name: this.tempUser.name,
+                            gender: this.tempUser.gender,
+                            birthdate: this.tempUser.birthdate
+                        });
+                        
+                        // Оновлюємо дані в інтерфейсі та localStorage
+                        this.user = { ...this.tempUser };
+                        localStorage.setItem('user', JSON.stringify(this.user));
+                        
+                        this.isError = false;
+                        this.statusMessage = "Профіль успішно оновлено!";
+                        this.isEditing = false;
+                        
+                    } catch (err) {
+                        this.isError = true;
+                        this.statusMessage = err.response?.data?.error || "Помилка при оновленні профілю.";
+                    } finally {
+                        this.isSaving = false;
+                    }
+                },
+                // Форматування дати для таблиці
+                formatDate(dateString) {
+                    if (!dateString) return 'Не вказано';
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('uk-UA', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+                },
+                // Вихід із системи
+                logout() {
+                    localStorage.removeItem('user');
+                    window.location.href = 'login.html';
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

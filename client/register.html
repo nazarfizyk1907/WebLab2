@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Реєстрація - URL Shortener</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body class="bg-light">
+    <div id="app" class="d-flex flex-column min-vh-100">
+        
+        <header>
+            <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+                <div class="container">
+                    <a class="navbar-brand fw-bold" href="index.html">
+                        <i class="bi bi-link-45deg"></i> URL Shortener
+                    </a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarNav">
+                        <ul class="navbar-nav ms-auto">
+                            <li class="nav-item"><a class="nav-link" href="index.html">Головна</a></li>
+                            <li class="nav-item"><a class="nav-link" href="about.html">Про додаток</a></li>
+                            <li class="nav-item"><a class="nav-link" href="profile.html">Профіль</a></li>
+                            <li class="nav-item"><a class="nav-link active" href="register.html">Реєстрація</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+        <main class="container flex-grow-1 d-flex align-items-center justify-content-center py-5">
+            <div class="card shadow border-0" style="max-width: 500px; width: 100%;">
+                <div class="card-body p-4 p-md-5">
+                    <h3 class="text-center mb-4">Реєстрація</h3>
+                    
+                    <div v-if="message" :class="['alert', isError ? 'alert-danger' : 'alert-success']" role="alert">
+                        {{ message }}
+                    </div>
+
+                    <form @submit.prevent="registerUser">
+                        <div class="mb-3">
+                            <label class="form-label">Ім'я</label>
+                            <input type="text" class="form-control" v-model="formData.name" placeholder="Введіть ваше ім'я" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" v-model="formData.email" placeholder="example@mail.com" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Пароль</label>
+                            <input type="password" class="form-control" v-model="formData.password" placeholder="Придумайте пароль" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label d-block">Стать</label>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="gender" id="male" value="Чоловіча" v-model="formData.gender" required>
+                                <label class="form-check-label" for="male">Чоловіча</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="gender" id="female" value="Жіноча" v-model="formData.gender">
+                                <label class="form-check-label" for="female">Жіноча</label>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label">Дата народження</label>
+                            <input type="date" class="form-control" v-model="formData.birthdate" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 py-2" :disabled="isLoading">
+                            <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            Зареєструватися
+                        </button>
+                    </form>
+                    <div class="text-center mt-4">
+                        <p class="text-muted small">Вже маєте акаунт? <a href="login.html" class="text-decoration-none">Увійти</a></p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="bg-dark text-white text-center py-3 mt-auto">
+            <div class="container">
+                <p class="mb-0">&copy; 2026 URL Shortener App. Всі права захищені.</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    formData: {
+                        name: '',
+                        email: '',
+                        password: '',
+                        gender: 'Чоловіча',
+                        birthdate: ''
+                    },
+                    message: '',
+                    isError: false,
+                    isLoading: false
+                }
+            },
+            methods: {
+                async registerUser() {
+                    this.isLoading = true;
+                    this.message = '';
+                    
+                    try {
+                        const response = await axios.post('http://localhost:3000/api/register', this.formData);
+                        
+                        this.isError = false;
+                        this.message = 'Реєстрація успішна! Перенаправлення...';
+                        
+                        setTimeout(() => {
+                            window.location.href = 'login.html';
+                        }, 1500);
+
+                    } catch (error) {
+                        this.isError = true;
+                        this.message = error.response?.data?.error || 'Сталася помилка при реєстрації. Спробуйте ще раз.';
+                    } finally {
+                        this.isLoading = false;
+                    }
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
